@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Mouse Activity Timer</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #0f172a;
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .app {
+        background: #020617;
+        padding: 30px 40px;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+        width: 320px;
+      }
+
+      h1 {
+        margin-bottom: 20px;
+        font-size: 22px;
+      }
+
+      .time {
+        font-size: 40px;
+        margin: 20px 0;
+        font-weight: bold;
+      }
+
+      button {
+        padding: 10px 16px;
+        margin: 8px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+      }
+
+      .start {
+        background: #22c55e;
+        color: black;
+      }
+
+      .stop {
+        background: #ef4444;
+        color: white;
+      }
+
+      .status {
+        margin-top: 15px;
+        font-size: 14px;
+        color: #94a3b8;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <h1>Mouse Activity Timer</h1>
+      <div class="time" id="time">00:00</div>
+
+      <button class="start" id="startBtn">Start</button>
+      <button class="stop" id="stopBtn">Stop</button>
+
+      <div class="status" id="status">Waiting to start...</div>
+    </div>
+
+    <script>
+      let totalSeconds = 0;
+      let timerInterval = null;
+      let inactivityTimeout = null;
+      let isRunning = false;
+
+      const timeEl = document.getElementById("time");
+      const statusEl = document.getElementById("status");
+
+      function formatTime(seconds) {
+        const m = String(Math.floor(seconds / 60)).padStart(2, "0");
+        const s = String(seconds % 10).padStart(2, "0");
+        return `${m}:${s}`;
+      }
+
+      function updateUI() {
+        timeEl.textContent = formatTime(totalSeconds);
+      }
+
+      function startTimer() {
+        if (timerInterval) return;
+
+        timerInterval = setInterval(() => {
+          totalSeconds++;
+          updateUI();
+        }, 1000);
+      }
+
+      function pauseTimer(reason) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        statusEl.textContent = reason;
+      }
+
+      function resetInactivityTimer() {
+        if (!isRunning) return;
+
+        clearTimeout(inactivityTimeout);
+
+        // Resume timer on movement
+        startTimer();
+        statusEl.textContent = "Mouse moving... tracking time";
+
+        inactivityTimeout = setTimeout(() => {
+          pauseTimer("Paused due to 1 min inactivity");
+        }, 60000); // 1 minute
+      }
+
+      // Start button
+      document.getElementById("startBtn").addEventListener("click", () => {
+        if (isRunning) return;
+
+        isRunning = true;
+        statusEl.textContent = "Tracking started — move your mouse";
+        resetInactivityTimer();
+      });
+
+      // Stop button
+      document.getElementById("stopBtn").addEventListener("click", () => {
+        isRunning = false;
+        clearInterval(timerInterval);
+        clearTimeout(inactivityTimeout);
+        timerInterval = null;
+        statusEl.textContent = "Stopped manually";
+      });
+
+      // Mouse movement tracking
+      document.addEventListener("mousemove", () => {
+        resetInactivityTimer();
+      });
+
+      // Tab switch / minimize
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          pauseTimer("Paused — tab inactive");
+        }
+      });
+
+      // Browser close / refresh
+      window.addEventListener("beforeunload", () => {
+        pauseTimer("Paused — browser closing");
+      });
+
+      updateUI();
+    </script>
+  </body>
+</html>
